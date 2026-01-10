@@ -13,6 +13,11 @@
     <link rel="manifest" href='data:application/manifest+json,{"name":"教練助手", "short_name":"教練助手", "start_url":".", "display":"standalone", "background_color":"#ffffff", "theme_color":"#ff6b00", "icons":[{"src":"icon.png","sizes":"512x512","type":"image/png"}]}'>
 
     <link rel="apple-touch-icon" href="icon.png">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIuaVmeeWtOW8mSzmiYsiLAogICJzaG9ydF9uYW1lIjogIuaVmeeWtOW8mSzmiYsiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAiYnJvd3NlciIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNmZjZiMDAiCn0=">
     <style>
         :root { 
             --primary: #ff6b00; --dark: #2c2c2c; --light: #f7f7f7; --border: #e0e0e0;
@@ -70,10 +75,9 @@
             font-size: 16px; background: #fafafa; transition: all 0.2s;
             box-sizing: border-box; display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
-            color: var(--dark);
+            color: var(--dark); /* Force color for all inputs and selects */
         }
-
-        select option { color: var(--dark); }
+        select option { color: var(--dark); } /* Force color for options */
         
         /* Fix for date/time inputs alignment on iOS */
         input[type="date"], input[type="time"] {
@@ -443,20 +447,45 @@
     </div>
 
     <script>
-        let logs = JSON.parse(localStorage.getItem('coachLogs')) || [];
-        let schedule = JSON.parse(localStorage.getItem('coachSchedule')) || [];
+        // --- Firebase 設定 ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBxPz6RfW4ph-T53b1s2Pzaw7-deX-iJxE",
+          authDomain: "coach-helper-ffcdb.firebaseapp.com",
+          projectId: "coach-helper-ffcdb",
+          storageBucket: "coach-helper-ffcdb.firebasestorage.app",
+          messagingSenderId: "320161236086",
+          appId: "1:320161236086:web:79b98040f780ba78d10b57",
+          measurementId: "G-VBZZBFDHGF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let logs = []; // 從雲端獲取，不再從 localStorage 讀取
+        let schedule = []; 
         let currentTab = 'home';
         let currentCalDate = new Date(); // 日曆顯示的月份
         let reportMonthDate = new Date(); // 報表顯示的月份 (分開處理)
         let selectedDate = new Date().toISOString().split('T')[0];
         
+        // --- 雲端即時同步監聽 ---
+        db.collection("logs").onSnapshot((snapshot) => {
+            logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateUI(); // 資料變動時自動刷新介面
+        });
+
+        db.collection("schedule").onSnapshot((snapshot) => {
+            schedule = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateUI();
+        });
+
         // New State for Filtering
         let selectedCourses = new Set();
         let lastFilterKey = '';
         let currentEditingId = null; // Track editing state
 
         document.getElementById('dateInput').valueAsDate = new Date();
-        updateUI();
+        // updateUI(); // 刪除這行，因為監聽器會自動觸發第一次渲染
 
         function updateUI() {
             updateLists();
@@ -834,13 +863,20 @@
             // Clear inputs
             ['moStart','moEnd','moBoss','moCourse','moLocation'].forEach(id=>document.getElementById(id).value='');
         }
-        function saveOneOffEntry() {
+        async function saveOneOffEntry() {
             const s=document.getElementById('moStart').value, e=document.getElementById('moEnd').value, b=document.getElementById('moBoss').value, c=document.getElementById('moCourse').value, l=document.getElementById('moLocation').value;
             if(!b||!s||!e){alert('資料不完整');return;}
-            schedule.push({id:Date.now(), date:selectedDate, start:s, end:e, boss:b, course:c, location:l});
-            saveSchedule();
-            closeOneOffModal();
-            renderCalendar(); // Refresh dots and list
+            
+            const newId = Date.now().toString();
+            const data = {
+                date: selectedDate, start: s, end: e, boss: b, course: c, location: l,
+                isOneOff: true
+            };
+
+            try {
+                await db.collection("schedule").doc(newId).set(data);
+                closeOneOffModal();
+            } catch (err) { alert("同步失敗: " + err); }
         }
 
         // --- 共用功能 ---
@@ -871,38 +907,57 @@
             });
         }
 
-        function checkInFromCal(id, date) {
+        async function checkInFromCal(id, date) {
             const item = schedule.find(s=>s.id===id); if(!item)return;
             const h = calculateHours(item.start, item.end);
-            logs.push({id:Date.now(), date, boss:item.boss, course:item.course, location:item.location, start:item.start, end:item.end, note:item.note, hours:h, isSub:false});
-            saveLogs(); renderSelectedDateInfo();
+            const newId = Date.now().toString();
+            const data = {
+                date, boss:item.boss, course:item.course, location:item.location || '', 
+                start:item.start, end:item.end, note:item.note || '', hours:h, isSub:false
+            };
+            try {
+                await db.collection("logs").doc(newId).set(data);
+            } catch (err) { alert("同步失敗: " + err); }
         }
-        function addLogEntry() {
+        async function addLogEntry() {
             const d=document.getElementById('dateInput').value, b=document.getElementById('bossInput').value, c=document.getElementById('courseInput').value, loc=document.getElementById('locationInput').value, s=document.getElementById('startTime').value, e=document.getElementById('endTime').value;
             const isSub = document.getElementById('isSubInput').checked;
             if(!d||!b||!s||!e){alert('資料不完整');return;}
-            logs.push({id:Date.now(), date:d, boss:b, course:c, location:loc, start:s, end:e, note:document.getElementById('noteInput').value, hours:calculateHours(s,e), isSub:isSub});
-            saveLogs(); document.getElementById('isSubInput').checked = false; switchTab('list');
+            
+            const newId = Date.now().toString(); // 使用時間戳作為文檔 ID
+            const data = {
+                date: d, boss: b, course: c, location: loc, start: s, end: e, 
+                note: document.getElementById('noteInput').value, 
+                hours: calculateHours(s,e), isSub: isSub,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection("logs").doc(newId).set(data);
+                document.getElementById('isSubInput').checked = false; 
+                switchTab('list'); // 儲存後自動跳轉
+            } catch (err) { alert("同步失敗: " + err); }
         }
-        function addTimetableEntry() {
+        async function addTimetableEntry() {
             const d=document.getElementById('ttDay').value, s=document.getElementById('ttStart').value, e=document.getElementById('ttEnd').value, b=document.getElementById('ttBoss').value, loc=document.getElementById('ttLocation').value;
             if(!b||!s||!e){alert('資料不完整');return;}
             
-            if (currentEditingId) {
-                // Update existing
-                const index = schedule.findIndex(x => x.id === currentEditingId);
-                if (index !== -1) {
-                    schedule[index] = { ...schedule[index], day:d, start:s, end:e, boss:b, course:document.getElementById('ttCourse').value, location:loc };
+            const data = {
+                day: d, start: s, end: e, boss: b, 
+                course: document.getElementById('ttCourse').value, location: loc,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (currentEditingId) {
+                    await db.collection("schedule").doc(currentEditingId.toString()).update(data);
+                    resetScheduleForm();
+                } else {
+                    const newId = Date.now().toString();
+                    await db.collection("schedule").doc(newId).set(data);
                 }
-                resetScheduleForm();
-            } else {
-                // Add new
-                schedule.push({id:Date.now(), day:d, start:s, end:e, boss:b, course:document.getElementById('ttCourse').value, location:loc});
-            }
-            
-            saveSchedule(); 
-            renderTimetableSettings();
-            setScheduleView('calendar'); // Auto switch back to calendar
+                setScheduleView('calendar'); // 儲存後跳回日曆
+            } catch (err) { alert("同步失敗: " + err); }
         }
 
         function editSchedule(id) {
@@ -934,10 +989,24 @@
             btn.style.background = ''; // Reset color
         }
         
-        function deleteLog(id){if(confirm('刪除？')){logs=logs.filter(x=>x.id!==id);saveLogs();}}
-        function deleteSchedule(id){if(confirm('刪除？')){schedule=schedule.filter(x=>x.id!==id);saveSchedule();}}
-        function saveLogs(){localStorage.setItem('coachLogs',JSON.stringify(logs));updateUI();}
-        function saveSchedule(){localStorage.setItem('coachSchedule',JSON.stringify(schedule));updateUI();}
+        async function deleteLog(id) {
+            if (confirm('確定刪除此記錄？')) {
+                try {
+                    await db.collection("logs").doc(id.toString()).delete();
+                } catch (e) { alert("刪除失敗: " + e); }
+            }
+        }
+
+        async function deleteSchedule(id) {
+            if (confirm('確定刪除此項目？')) {
+                try {
+                    await db.collection("schedule").doc(id.toString()).delete();
+                } catch (e) { alert("刪除失敗: " + e); }
+            }
+        }
+
+        function saveLogs() {} // Dummy
+        function saveSchedule() {} // Dummy
         function calculateHours(s,e){let diff=(new Date(`2000/01/01 ${e}`)-new Date(`2000/01/01 ${s}`))/36e5; return (diff<0?diff+24:diff).toFixed(2);}
         function updateLists(){
             const bosses=[...new Set(logs.map(x=>x.boss))], courses=[...new Set(logs.map(x=>x.course).filter(x=>x))];
