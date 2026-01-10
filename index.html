@@ -503,14 +503,7 @@
         let unsubscribeLogs = null;
         let unsubscribeSchedule = null;
 
-        let currentTab = 'home';
-        let currentCalDate = new Date();
         let reportMonthDate = new Date();
-        let selectedDate = new Date().toISOString().split('T')[0];
-        
-        let selectedCourses = new Set();
-        let lastFilterKey = '';
-        let currentEditingId = null;
         
         // --- Authentication Logic ---
         auth.onAuthStateChanged(user => {
