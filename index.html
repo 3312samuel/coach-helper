@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
-    <title>教練助手 v8.0</title>
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIuaVmeeWtOW8mSzmiYsiLAogICJzaG9ydF9uYW1lIjogIuaVmeeWtOW8mSzmiYsiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAiYnJvd3NlciIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNmZjZiMDAiCn0=">
-    <style>
+    <title>教練助手</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":">教練助手", "short_name":">教練助手", "start_url":".", "display":"standalone", "background_color":"#ffffff", "theme_color":"#ff6b00", "icons":[{"src":"icon.png","sizes":"512x512","type":"image/png"}]}'>    <style>
         :root { 
             --primary: #ff6b00; --dark: #2c2c2c; --light: #f7f7f7; --border: #e0e0e0;
             --blue: #2196f3; --blue-bg: #e3f2fd;
@@ -27,11 +26,17 @@
 
         /* Header */
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        h1 { margin: 0; font-size: 1.4em; font-weight: 800; letter-spacing: -0.5px; }
+        h1 { margin: 0; font-size: 1.4em; font-weight: 800; letter-spacing: -0.5px; color: var(--dark); }
         select.header-select {
             width: auto; padding: 8px 30px 8px 12px; font-size: 0.9em; font-weight: 500;
             background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 5px center;
             background-size: 20px; border: 1px solid var(--border); border-radius: 8px; appearance: none;
+            color: var(--dark); /* Force color */
+        }
+        
+        .today-btn-small { 
+            font-size: 0.7em; padding: 4px 10px; border: 1px solid var(--border); border-radius: 12px; 
+            background: white; margin-left: 10px; color: var(--dark); /* Force color */
         }
 
         /* Navigation */
@@ -64,6 +69,7 @@
             line-height: 50px; /* Force vertical centering */
             padding-top: 0; padding-bottom: 0; /* Let line-height handle vertical space */
             background-color: #fafafa; /* Ensure background matches */
+            color: var(--dark); /* Force text color */
         }
         
         /* Ensure placeholders and values align vertically */
