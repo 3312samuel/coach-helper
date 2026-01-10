@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>教練助手 v8.0</title>
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIuaVmeeWtOW8mSzmiYsiLAogICJzaG9ydF9uYW1lIjogIuaVmeeWtOW8mSzmiYsiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAiYnJvd3NlciIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNmZjZiMDAiCn0=">
+    <style>
+        :root { 
+            --primary: #ff6b00; --dark: #2c2c2c; --light: #f7f7f7; --border: #e0e0e0;
+            --blue: #2196f3; --blue-bg: #e3f2fd;
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 20px; padding-bottom: calc(90px + var(--safe-bottom)); 
+            background: var(--light); color: var(--dark);
+        }
+
+        /* Icons */
+        .icon { width: 20px; height: 20px; fill: currentColor; vertical-align: middle; }
+        .icon-lg { width: 24px; height: 24px; }
+        .icon-sm { width: 16px; height: 16px; }
+
+        /* Header */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        h1 { margin: 0; font-size: 1.4em; font-weight: 800; letter-spacing: -0.5px; }
+        select.header-select {
+            width: auto; padding: 8px 30px 8px 12px; font-size: 0.9em; font-weight: 500;
+            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23999'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 5px center;
+            background-size: 20px; border: 1px solid var(--border); border-radius: 8px; appearance: none;
+        }
+
+        /* Navigation */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 10px 0 calc(10px + var(--safe-bottom)) 0;
+            border-top: 1px solid var(--border); z-index: 1000;
+        }
+        .nav-item { flex: 1; text-align: center; color: #bbb; padding: 5px; cursor: pointer; transition: color 0.2s; }
+        .nav-item.active { color: var(--primary); }
+        .nav-label { font-size: 10px; font-weight: 600; margin-top: 3px; display: block; }
+        .tab-content { display: none; animation: fadeIn 0.2s ease-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Components */
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 15px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85em; color: #666; }
+        input, select { 
+            width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; 
+            font-size: 16px; background: #fafafa; transition: all 0.2s;
+        }
+        input:focus { border-color: var(--primary); background: white; }
+        
+        .btn-primary { 
+            background: var(--primary); color: white; border: none; padding: 16px; 
+            width: 100%; border-radius: 12px; font-size: 1em; font-weight: 700; 
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 8px 20px rgba(255, 107, 0, 0.25);
+        }
+        .btn-action { 
+            background: white; border: 1px solid var(--border); color: #555; 
+            padding: 8px 16px; border-radius: 20px; font-size: 0.85em; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px; margin: 0 4px;
+        }
+
+        /* Checkbox */
+        .checkbox-wrapper {
+            display: flex; align-items: center; gap: 12px; 
+            background: #fafafa; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+            margin-bottom: 20px; cursor: pointer;
+        }
+        .checkbox-wrapper input { width: 20px; height: 20px; margin: 0; }
+        .checkbox-label { font-weight: 600; font-size: 0.95em; color: var(--dark); flex: 1; }
+        
+        /* List Style */
+        .record-card {
+            background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 4px solid var(--primary); border: 1px solid transparent;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02); position: relative;
+        }
+        .record-card.is-sub { border-left-color: var(--blue); }
+        .record-info { flex: 1; }
+        .record-title { font-weight: 700; font-size: 1.05em; color: var(--dark); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .record-tag { font-size: 0.75em; background: #f0f0f0; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: 500; }
+        .sub-tag { font-size: 0.75em; background: var(--blue-bg); padding: 2px 8px; border-radius: 4px; color: var(--blue); font-weight: 700; }
+        .record-meta { font-size: 0.85em; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+        .hours-badge { font-size: 1.1em; font-weight: 800; color: var(--primary); margin-right: 15px; }
+        .record-card.is-sub .hours-badge { color: var(--blue); }
+        .delete-btn { background: none; border: none; color: #e0e0e0; padding: 8px; cursor: pointer; }
+        .delete-btn:hover { color: #ff4444; }
+
+        /* Calendar & Month Selector */
+        .month-selector { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+        .month-btn { background: none; border: none; padding: 5px 15px; cursor: pointer; color: var(--dark); }
+        .month-label { font-weight: 700; font-size: 1.1em; }
+
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: 700; font-size: 1.1em; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+        .cal-day-name { font-size: 0.75em; color: #bbb; margin-bottom: 10px; font-weight: 600; }
+        .cal-cell { 
+            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 4px;
+            border-radius: 10px; font-size: 0.9em; position: relative; color: #555; font-weight: 500;
+        }
+        .cal-cell.today { background: #fff8f2; color: var(--primary); font-weight: 800; border: 1px solid rgba(255, 107, 0, 0.3); }
+        .cal-cell.selected { background: var(--dark); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: none; }
+        
+        /* TimeTree Style Dots */
+        .dots-container { display: flex; gap: 2px; justify-content: center; position: absolute; bottom: 6px; width: 100%; px: 2px; flex-wrap: wrap; }
+        .dot { width: 4px; height: 4px; border-radius: 50%; }
+        .dot.done { background: var(--primary); }
+        .dot.sub { background: var(--blue); }
+        .dot.future { background: #ccc; }
+        .dot.selected-day-dot { background: white; } /* White dots when cell is dark */
+
+        /* Timeline Style */
+        .timeline-container { position: relative; padding-left: 20px; border-left: 2px solid #f0f0f0; margin-left: 10px; margin-top: 15px; }
+        .timeline-item { position: relative; margin-bottom: 20px; padding-left: 15px; }
+        .timeline-dot { 
+            width: 12px; height: 12px; border-radius: 50%; background: white; border: 3px solid var(--primary); 
+            position: absolute; left: -27px; top: 0px; z-index: 1;
+        }
+        .timeline-dot.future { border-color: #ccc; }
+        .timeline-dot.sub { border-color: var(--blue); }
+        .timeline-time { font-size: 0.85em; color: #888; font-weight: 600; margin-bottom: 4px; }
+        .timeline-content { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid var(--border); }
+        
+        .today-btn-small { font-size: 0.7em; padding: 4px 10px; border: 1px solid var(--border); border-radius: 12px; background: white; margin-left: 10px; }
+
+        /* Mobile Optimized View Toggle (Segmented Control) */
+        .view-toggle { 
+            background: #eaeaea; padding: 4px; border-radius: 14px; 
+            display: flex; width: 100%; max-width: 350px; margin: 0 auto 20px auto;
+            position: relative; user-select: none;
+        }
+        .toggle-btn { 
+            flex: 1; padding: 12px 0; border-radius: 10px; text-align: center;
+            font-size: 0.95em; color: #777; cursor: pointer; font-weight: 600; 
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative; z-index: 1;
+        }
+        .toggle-btn.active { 
+            background: white; color: var(--primary); 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08); font-weight: 800; 
+        }
+        .toggle-btn:active { transform: scale(0.96); opacity: 0.8; }
+
+        /* Floating Action Button */
+        .fab-btn {
+            position: fixed; bottom: calc(80px + var(--safe-bottom)); right: 20px;
+            width: 56px; height: 56px; background: var(--primary); color: white;
+            border-radius: 50%; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            border: none; cursor: pointer; z-index: 900;
+        }
+        .fab-btn svg { width: 28px; height: 28px; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 2000; display: none;
+            align-items: center; justify-content: center; padding: 20px;
+            backdrop-filter: blur(2px);
+        }
+        .modal-card {
+            background: white; width: 100%; max-width: 400px;
+            border-radius: 20px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: modalUp 0.25s ease-out;
+        }
+        @keyframes modalUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-title { font-size: 1.2em; font-weight: 800; margin-bottom: 20px; }
+        .btn-secondary { background: #f0f0f0; color: #666; border: none; padding: 16px; border-radius: 12px; font-weight: 700; flex: 1; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+        /* Course Filters */
+        .course-filters {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; padding: 10px;
+            background: #fff; border-radius: 12px; border: 1px solid var(--border);
+        }
+        .filter-chip {
+            font-size: 0.8em; padding: 6px 12px; border-radius: 20px; background: #f0f0f0; 
+            color: #666; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; user-select: none;
+        }
+        .filter-chip.active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); font-weight: 600; }
+
+        /* Duration Quick Select (Mobile Optimized) */
+        .duration-chips { 
+            display: flex; gap: 12px; margin-bottom: 20px; margin-top: -5px; 
+            overflow-x: auto; padding: 4px 2px 10px 2px; /* Extra bottom padding for shadow */
+            -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+        }
+        .duration-btn {
+            font-size: 0.9em; padding: 10px 18px; /* Larger touch target */
+            background: white; color: var(--primary);
+            border: 1px solid var(--border); border-radius: 25px; 
+            cursor: pointer; font-weight: 600; white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Card-like shadow */
+            transition: all 0.1s;
+            flex: 1; text-align: center; /* Stretch to fill available space */
+        }
+        .duration-btn:active { 
+            background: var(--blue-bg); color: var(--blue); border-color: var(--blue);
+            transform: scale(0.96); box-shadow: none;
+        }
+
+        /* Print Specifics */
+        .print-report { display: none; }
+        
+        @media print {
+            body { background: white; padding: 0; color: black; -webkit-print-color-adjust: exact; }
+            .bottom-nav, .input-section, .tools-area, header, .view-toggle, .delete-btn, .month-selector button, .course-filters, #tab-home, #tab-schedule, .card { display: none !important; }
+            .month-selector { border: none; padding: 0; justify-content: flex-start; margin-bottom: 10px; }
+            .month-label { font-size: 1.5em; text-align: left; }
+            
+            #tab-list { display: block !important; }
+            #logListContainer { display: none !important; } /* Hide normal list, show print table */
+            
+            .print-report { display: block; font-family: sans-serif; }
+            .print-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .print-title { font-size: 24px; font-weight: 900; }
+            .print-meta { font-size: 14px; color: #444; text-align: right; }
+            
+            /* Print Calendar */
+            .print-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 20px; border: 1px solid #ddd; }
+            .p-cal-head { font-size: 10px; text-align: center; background: #eee; padding: 4px; font-weight: bold; }
+            .p-cal-cell { height: 50px; border: 1px solid #eee; padding: 2px; font-size: 10px; position: relative; }
+            .p-cal-cell.has-work { background: #f0f8ff; }
+            .p-work-dot { display: block; background: #000; color: #fff; border-radius: 4px; padding: 1px 3px; margin-top: 2px; font-size: 9px; text-align: center; }
+
+            /* Print Table */
+            .print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            .print-table th { border-bottom: 1px solid #000; text-align: left; padding: 4px; }
+            .print-table td { border-bottom: 1px solid #eee; padding: 6px 4px; }
+            .print-total { margin-top: 20px; text-align: right; font-weight: bold; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>教練助手</h1>
+        <select id="filterBoss" class="header-select" onchange="updateUI()">
+            <option value="all">全部付款人</option>
+        </select>
+    </header>
+
+    <div id="tab-home" class="tab-content active">
+        <div class="card input-section">
+            <div class="form-group"><label>日期</label><input type="date" id="dateInput"></div>
+            <div class="form-group"><label>付款人 (Payer)</label><input type="text" id="bossInput" placeholder="輸入名稱..." list="bossList"></div>
+            <div class="form-group"><label>課程 (Course)</label><input type="text" id="courseInput" placeholder="課程名稱..." list="courseList"></div>
+            <div class="form-group"><label>地點 (Location)</label><input type="text" id="locationInput" placeholder="輸入地點..." list="locationList"></div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1"><label>開始</label><input type="time" id="startTime"></div>
+                <div class="form-group" style="flex:1"><label>結束</label><input type="time" id="endTime"></div>
+            </div>
+            <div class="duration-chips">
+                <div class="duration-btn" onclick="calcEnd('startTime','endTime',60)">+1 hr</div>
+                <div class="duration-btn" onclick="calcEnd('startTime','endTime',90)">+1.5 hr</div>
+                <div class="duration-btn" onclick="calcEnd('startTime','endTime',120)">+2 hr</div>
+            </div>
+            
+            <label class="checkbox-wrapper">
+                <input type="checkbox" id="isSubInput">
+                <span class="checkbox-label">代其他同事課 (Substitute)</span>
+            </label>
+
+            <div class="form-group"><label>備註</label><input type="text" id="noteInput" placeholder="選填..."></div>
+            
+            <button class="btn-primary" onclick="addLogEntry()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 確認記錄
+            </button>
+        </div>
+    </div>
+
+    <div id="tab-list" class="tab-content">
+        
+        <div class="month-selector">
+            <button class="month-btn" onclick="changeReportMonth(-1)"><svg class="icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
+            <span id="reportMonthTitle" class="month-label"></span>
+            <button class="month-btn" onclick="changeReportMonth(1)"><svg class="icon" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+        </div>
+
+        <div class="card" style="background:var(--dark); color:white;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; opacity:0.8; font-size:0.9em;">
+                <span>月度總結</span>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+            </div>
+            <div style="font-size:2em; font-weight:800; margin-bottom:15px;"><span id="totalHours">0.0</span> <span style="font-size:0.5em; font-weight:500;">hr</span></div>
+            <div id="breakdownContainer" style="font-size:0.85em; opacity:0.8; line-height:1.6; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;"></div>
+        </div>
+
+        <div id="courseFilters" class="course-filters"></div>
+        <div id="printReport" class="print-report"></div>
+        <div id="logListContainer"></div>
+        
+        <div class="tools-area" style="text-align:center; margin-top:30px;">
+            <button class="btn-action" onclick="window.print()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 12v2H8v-2h8zm2-2v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"/></svg> 列印</button>
+            <button class="btn-action" onclick="exportData()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 備份</button>
+            <button class="btn-action" onclick="document.getElementById('importFile').click()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> 還原</button>
+        </div>
+    </div>
+
+    <div id="tab-schedule" class="tab-content">
+        <div style="text-align:center;">
+            <div class="view-toggle">
+                <div class="toggle-btn active" onclick="setScheduleView('calendar')" id="btn-view-cal">日曆</div>
+                <div class="toggle-btn" onclick="setScheduleView('list')" id="btn-view-list">設定課表</div>
+            </div>
+        </div>
+        <div id="view-calendar">
+            <div class="card">
+                <div class="calendar-header">
+                    <div onclick="changeCalMonth(-1)" style="cursor:pointer; padding:10px;"><svg class="icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>
+                    <span id="calMonthTitle"></span>
+                    <div onclick="changeCalMonth(1)" style="cursor:pointer; padding:10px;"><svg class="icon" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div id="selectedDateInfo"></div>
+            <button class="fab-btn" onclick="openOneOffModal()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+        </div>
+        <div id="view-list" style="display:none;">
+            <div class="card">
+                <div class="form-group"><label>星期</label><select id="ttDay"><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option><option value="6">週六</option><option value="0">週日</option></select></div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex:1"><input type="time" id="ttStart"></div>
+                    <div class="form-group" style="flex:1"><input type="time" id="ttEnd"></div>
+                </div>
+                <div class="duration-chips">
+                    <div class="duration-btn" onclick="calcEnd('ttStart','ttEnd',60)">+1 hr</div>
+                    <div class="duration-btn" onclick="calcEnd('ttStart','ttEnd',90)">+1.5 hr</div>
+                    <div class="duration-btn" onclick="calcEnd('ttStart','ttEnd',120)">+2 hr</div>
+                </div>
+                <div class="form-group"><input type="text" id="ttBoss" placeholder="付款人"></div>
+                <div class="form-group"><input type="text" id="ttCourse" placeholder="課程"></div>
+                <div class="form-group"><input type="text" id="ttLocation" placeholder="地點"></div>
+                <button class="btn-primary" onclick="addTimetableEntry()"><svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> 加入課表</button>
+                <button class="btn-action" style="width:100%; margin-top:10px; border-radius:12px; padding:12px; justify-content:center;" onclick="setScheduleView('calendar')">返回日曆檢視</button>
+            </div>
+            <div id="timetableContainer"></div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home', this)">
+            <svg class="icon-lg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            <span class="nav-label">記錄</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('list', this)">
+            <svg class="icon-lg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            <span class="nav-label">報表</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('schedule', this)">
+            <svg class="icon-lg" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+            <span class="nav-label">日程</span>
+        </div>
+    </div>
+    
+    <input type="file" id="importFile" style="display: none" onchange="importData(this)">
+    <datalist id="bossList"></datalist> <datalist id="courseList"></datalist> <datalist id="locationList"></datalist>
+
+    <!-- Modal for One-off Event -->
+    <div id="oneOffModal" class="modal-overlay" onclick="if(event.target===this)closeOneOffModal()">
+        <div class="modal-card">
+            <div class="modal-title">新增單次行程 (<span id="modalDateLabel"></span>)</div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1"><input type="time" id="moStart"></div>
+                <div class="form-group" style="flex:1"><input type="time" id="moEnd"></div>
+            </div>
+            <div class="duration-chips">
+                <div class="duration-btn" onclick="calcEnd('moStart','moEnd',60)">+1 hr</div>
+                <div class="duration-btn" onclick="calcEnd('moStart','moEnd',90)">+1.5 hr</div>
+                <div class="duration-btn" onclick="calcEnd('moStart','moEnd',120)">+2 hr</div>
+            </div>
+            <div class="form-group"><input type="text" id="moBoss" placeholder="付款人" list="bossList"></div>
+            <div class="form-group"><input type="text" id="moCourse" placeholder="課程" list="courseList"></div>
+            <div class="form-group"><input type="text" id="moLocation" placeholder="地點" list="locationList"></div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeOneOffModal()">取消</button>
+                <button class="btn-primary" onclick="saveOneOffEntry()" style="flex:2">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logs = JSON.parse(localStorage.getItem('coachLogs')) || [];
+        let schedule = JSON.parse(localStorage.getItem('coachSchedule')) || [];
+        let currentTab = 'home';
+        let currentCalDate = new Date(); // 日曆顯示的月份
+        let reportMonthDate = new Date(); // 報表顯示的月份 (分開處理)
+        let selectedDate = new Date().toISOString().split('T')[0];
+        
+        // New State for Filtering
+        let selectedCourses = new Set();
+        let lastFilterKey = '';
+        let currentEditingId = null; // Track editing state
+
+        document.getElementById('dateInput').valueAsDate = new Date();
+        updateUI();
+
+        function updateUI() {
+            updateLists();
+            if (currentTab === 'list') renderLogList(); // 報表
+            if (currentTab === 'schedule') { renderCalendar(); renderTimetableSettings(); }
+        }
+
+        function switchTab(tabName, el) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if (el) {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                el.classList.add('active');
+            }
+            if(typeof resetScheduleForm === 'function') resetScheduleForm(); // Reset form when switching tabs
+            updateUI();
+        }
+
+        // --- 報表月份切換邏輯 ---
+        function changeReportMonth(n) {
+            reportMonthDate.setMonth(reportMonthDate.getMonth() + n);
+            renderLogList();
+        }
+
+        // --- 報表渲染邏輯 (含月份篩選 & 課程篩選) ---
+        function renderLogList() {
+            const container = document.getElementById('logListContainer');
+            const breakdown = document.getElementById('breakdownContainer');
+            const title = document.getElementById('reportMonthTitle');
+            const filterBoss = document.getElementById('filterBoss').value;
+            
+            // 設定報表標題
+            const year = reportMonthDate.getFullYear();
+            const month = reportMonthDate.getMonth();
+            title.innerText = `${year}年 ${month + 1}月`;
+            const filterPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
+
+            // 1. 獲取本月符合老闆條件的所有記錄 (Raw Data)
+            const rawMonthLogs = logs.filter(e => {
+                const dateMatch = e.date.startsWith(filterPrefix);
+                const bossMatch = (filterBoss === 'all' || e.boss === filterBoss);
+                return dateMatch && bossMatch;
+            }).sort((a,b) => new Date(b.date)-new Date(a.date));
+
+            // 2. 提取可用課程
+            const availableCourses = [...new Set(rawMonthLogs.map(e => e.course || '未分類'))].sort();
+
+            // 3. 檢查上下文是否改變 (月份或老闆變更時重置篩選)
+            const currentKey = `${filterPrefix}_${filterBoss}`;
+            if (currentKey !== lastFilterKey) {
+                selectedCourses = new Set(availableCourses);
+                lastFilterKey = currentKey;
+            }
+
+            // 4. 渲染篩選器 (Filter Chips)
+            const filterContainer = document.getElementById('courseFilters');
+            filterContainer.innerHTML = '';
+            if (availableCourses.length > 0) {
+                availableCourses.forEach(c => {
+                    const isActive = selectedCourses.has(c);
+                    const chip = document.createElement('span');
+                    chip.className = `filter-chip ${isActive?'active':''}`;
+                    chip.innerText = c;
+                    chip.onclick = () => {
+                        if (selectedCourses.has(c)) {
+                            if (selectedCourses.size > 1) selectedCourses.delete(c); // 至少保留一個
+                        } else {
+                            selectedCourses.add(c);
+                        }
+                        renderLogList(); // 重新渲染
+                    };
+                    filterContainer.appendChild(chip);
+                });
+            } else {
+                 filterContainer.innerHTML = '<span style="color:#bbb;font-size:0.8em;">無課程可篩選</span>';
+            }
+
+            // 5. 根據篩選器過濾顯示資料
+            const filteredLogs = rawMonthLogs.filter(e => selectedCourses.has(e.course || '未分類'));
+
+            // 6. 渲染列表 & 統計
+            container.innerHTML = ''; breakdown.innerHTML = '';
+            let total = 0; let bMap = {};
+
+            if(filteredLogs.length === 0){ 
+                container.innerHTML='<div style="text-align:center;color:#bbb;padding:40px;">無符合記錄</div>'; 
+                document.getElementById('totalHours').innerText="0.0";
+                renderPrintView([]); // Clear print view
+                return; 
+            }
+
+            filteredLogs.forEach(e => {
+                let h = parseFloat(e.hours); total += h;
+                let c = e.course || '未分類';
+                if(e.isSub) c += " (代課)"; 
+                bMap[c] = (bMap[c]||0)+h;
+
+                const subClass = e.isSub ? 'is-sub' : '';
+                const subTag = e.isSub ? '<span class="sub-tag">代課</span>' : '';
+                const locationTxt = e.location ? `<span class="record-tag">📍 ${e.location}</span>` : '';
+
+                container.innerHTML += `
+                    <div class="record-card ${subClass}">
+                        <div class="record-info">
+                            <div class="record-meta">${e.date}</div>
+                            <div class="record-title">${e.boss} ${subTag} ${e.course?`<span class="record-tag">${e.course}</span>`:''} ${locationTxt}</div>
+                            <div class="record-meta">${e.start}-${e.end} ${e.note||''}</div>
+                        </div>
+                        <div class="hours-badge">${e.hours}</div>
+                        <button class="delete-btn" onclick="deleteLog(${e.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                    </div>`;
+            });
+            document.getElementById('totalHours').innerText = total.toFixed(2);
+            Object.keys(bMap).forEach(k => breakdown.innerHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>${k}</span><span>${bMap[k].toFixed(2)}</span></div>`);
+            
+            // 7. 更新列印視圖
+            renderPrintView(filteredLogs);
+        }
+
+        function renderPrintView(logs) {
+            const pContainer = document.getElementById('printReport');
+            if(!pContainer) return;
+            
+            const year = reportMonthDate.getFullYear();
+            const month = reportMonthDate.getMonth();
+            const bossName = document.getElementById('filterBoss').value;
+            const displayBoss = bossName === 'all' ? '全部付款人' : bossName;
+            
+            // Get unique courses from the logs being printed
+            const courseList = [...new Set(logs.map(l => l.course || '未分類'))].join(', ');
+            
+            const totalH = logs.reduce((acc, cur) => acc + parseFloat(cur.hours), 0).toFixed(2);
+
+            let html = `
+                <div class="print-header">
+                    <div class="print-title">${year}年${month+1}月 工作報表</div>
+                    <div class="print-meta">
+                        <div style="font-weight:700;">付款人: ${displayBoss}</div>
+                        <div style="font-size:0.9em; margin:2px 0;">課程: ${courseList}</div>
+                        <div style="font-weight:700;">總計: ${totalH} hr</div>
+                    </div>
+                </div>
+            `;
+
+            // Print Calendar
+            html += `<div class="print-cal">`;
+            ['日','一','二','三','四','五','六'].forEach(d => html += `<div class="p-cal-head">${d}</div>`);
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for(let i=0; i<firstDay; i++) html += `<div></div>`;
+            
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dayLogs = logs.filter(l => l.date === dateStr);
+                const dayHours = dayLogs.reduce((a,b)=>a+parseFloat(b.hours), 0);
+                
+                let content = `<span>${d}</span>`;
+                let cls = 'p-cal-cell';
+                if(dayHours > 0) {
+                    cls += ' has-work';
+                    content += `<span class="p-work-dot">${dayHours.toFixed(1)}h</span>`;
+                }
+                html += `<div class="${cls}">${content}</div>`;
+            }
+            html += `</div>`;
+
+            // Print Table
+            html += `
+                <table class="print-table">
+                    <thead><tr><th>日期</th><th>時間</th><th>地點</th><th>內容</th><th style="text-align:right">時數</th></tr></thead>
+                    <tbody>
+            `;
+            // Sort by Date ASC for report
+            const sortedForPrint = [...logs].sort((a,b)=>new Date(a.date)-new Date(b.date) || a.start.localeCompare(b.start));
+            
+            sortedForPrint.forEach(l => {
+                const dObj = new Date(l.date);
+                const dayMap = ['日','一','二','三','四','五','六'];
+                const dateTxt = `${dObj.getMonth()+1}/${dObj.getDate()} (${dayMap[dObj.getDay()]})`;
+                html += `
+                    <tr>
+                        <td>${dateTxt}</td>
+                        <td>${l.start}-${l.end}</td>
+                        <td>${l.location || '-'}</td>
+                        <td>${l.course||''} ${l.isSub?'(代)':''} ${l.note||''}</td>
+                        <td style="text-align:right">${l.hours}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+            html += `<div class="print-total">總計: ${totalH} 小時</div>`;
+
+            pContainer.innerHTML = html;
+        }
+
+        // --- 日曆邏輯 ---
+        function setScheduleView(view) {
+            document.getElementById('view-calendar').style.display = view === 'calendar' ? 'block' : 'none';
+            document.getElementById('view-list').style.display = view === 'list' ? 'block' : 'none';
+            document.getElementById('btn-view-cal').className = `toggle-btn ${view === 'calendar' ? 'active' : ''}`;
+            document.getElementById('btn-view-list').className = `toggle-btn ${view === 'list' ? 'active' : ''}`;
+        }
+        function changeCalMonth(d) { currentCalDate.setMonth(currentCalDate.getMonth() + d); renderCalendar(); }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const title = document.getElementById('calMonthTitle');
+            const filter = document.getElementById('filterBoss').value;
+            grid.innerHTML = '';
+            
+            const year = currentCalDate.getFullYear(), month = currentCalDate.getMonth();
+            title.innerHTML = `${year}年 ${month + 1}月 <button class="today-btn-small" onclick="goToToday()">今天</button>`;
+            
+            ['日','一','二','三','四','五','六'].forEach(d => grid.innerHTML += `<div class="cal-day-name">${d}</div>`);
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for(let i=0;i<firstDay;i++) grid.innerHTML+='<div></div>';
+
+            for(let d=1; d<=daysInMonth; d++){
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dayOfWeek = new Date(dateStr).getDay();
+                
+                // Get all events for this day
+                const dayLogs = logs.filter(l => l.date === dateStr && (filter==='all'||l.boss===filter));
+                // Recurring Schedule
+                const recurringSch = schedule.filter(s => s.day==dayOfWeek && !s.date && (filter==='all'||s.boss===filter));
+                // One-off Schedule
+                const oneOffSch = schedule.filter(s => s.date === dateStr && (filter==='all'||s.boss===filter));
+                
+                // Determine dots to show
+                let dotHtml = '<div class="dots-container">';
+                const isSel = dateStr === selectedDate;
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                const dotClass = isSel ? 'dot selected-day-dot' : 'dot';
+
+                // Add dots for completed logs (max 3)
+                dayLogs.slice(0, 3).forEach(l => {
+                    const type = l.isSub ? 'sub' : 'done';
+                    dotHtml += `<div class="${dotClass} ${type}"></div>`;
+                });
+                
+                // Merge future events (recurring + one-off), filter out logged ones
+                let futureEvents = [...oneOffSch];
+                recurringSch.forEach(rs => {
+                    // Check if this recurring event is already logged (avoid dupes)
+                    if(!dayLogs.some(l => l.boss === rs.boss && l.start === rs.start)) {
+                        futureEvents.push(rs);
+                    }
+                });
+                
+                if (dayLogs.length < 3 && futureEvents.length > 0) {
+                    const remainingSlots = 3 - dayLogs.length;
+                    futureEvents.slice(0, remainingSlots).forEach(() => {
+                        dotHtml += `<div class="${dotClass} future"></div>`;
+                    });
+                }
+                dotHtml += '</div>';
+                
+                const cell = document.createElement('div');
+                cell.className = `cal-cell ${isToday?'today':''} ${isSel?'selected':''}`;
+                cell.onclick = () => { selectedDate = dateStr; renderCalendar(); renderSelectedDateInfo(); };
+                
+                cell.innerHTML = `<span>${d}</span>${dotHtml}`;
+                grid.appendChild(cell);
+            }
+            renderSelectedDateInfo();
+        }
+
+        function goToToday() {
+            currentCalDate = new Date();
+            selectedDate = new Date().toISOString().split('T')[0];
+            renderCalendar();
+        }
+
+        function renderSelectedDateInfo() {
+            const container = document.getElementById('selectedDateInfo');
+            const filter = document.getElementById('filterBoss').value;
+            const dayOfWeek = new Date(selectedDate).getDay();
+            
+            const todayLogs = logs.filter(l => l.date === selectedDate && (filter === 'all' || l.boss === filter));
+            // Recurring
+            const recurringSch = schedule.filter(s => s.day == dayOfWeek && !s.date && (filter === 'all' || s.boss === filter));
+            // One-off
+            const oneOffSch = schedule.filter(s => s.date === selectedDate && (filter === 'all' || s.boss === filter));
+            
+            let html = `<div style="margin:20px 0 10px 0; font-weight:700; font-size:1.1em; color:var(--dark); display:flex; justify-content:space-between;">
+                <span>${selectedDate} 行程</span>
+            </div>`;
+            
+            if (todayLogs.length === 0 && recurringSch.length === 0 && oneOffSch.length === 0) {
+                html += `<div style="color:#bbb; text-align:center; padding:20px; font-size:0.9em;">沒有安排</div>`;
+                container.innerHTML = html;
+                return;
+            }
+
+            html += `<div class="timeline-container">`;
+
+            // Merge and sort all events by time
+            let allEvents = [];
+            todayLogs.forEach(l => allEvents.push({...l, type:'log'}));
+            
+            // Add Scheduled items if not logged
+            [...recurringSch, ...oneOffSch].forEach(s => {
+                if (!todayLogs.some(l => l.boss === s.boss && l.start === s.start)) {
+                    allEvents.push({...s, type:'sch', isOneOff: !!s.date});
+                }
+            });
+            allEvents.sort((a,b) => a.start.localeCompare(b.start));
+
+            allEvents.forEach(e => {
+                const isLog = e.type === 'log';
+                const isSub = e.isSub;
+                const dotClass = isLog ? (isSub ? 'sub' : '') : 'future';
+                const loc = e.location ? `<span style="font-size:0.85em; color:#999; margin-left:6px;">📍 ${e.location}</span>` : '';
+                const oneOffBadge = e.isOneOff ? '<span class="record-tag" style="background:#fff3e0; color:#ff9800;">單次</span>' : '';
+                
+                html += `
+                <div class="timeline-item">
+                    <div class="timeline-dot ${dotClass}"></div>
+                    <div class="timeline-time">${e.start} - ${e.end}</div>
+                    <div class="timeline-content">
+                        <div style="font-weight:700; color:var(--dark); display:flex; justify-content:space-between;">
+                            <span>${e.boss} ${isSub?'<span class="sub-tag">代</span>':''} ${oneOffBadge}</span>
+                            ${isLog ? `<span style="color:var(--primary); font-size:0.9em;">${e.hours}h</span>` : ''}
+                        </div>
+                        <div style="font-size:0.9em; color:#666; margin-top:4px;">
+                            ${e.course||''} ${loc}
+                        </div>
+                        ${!isLog ? `<div style="margin-top:8px;">
+                            <button class="btn-action" style="background:var(--primary); color:white; border:none; padding:4px 12px;" onclick="checkInFromCal(${e.id}, '${selectedDate}')">補打卡</button>
+                            ${e.isOneOff ? `<button class="delete-btn" style="float:right; color:#ccc;" onclick="deleteSchedule(${e.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : ''}
+                        </div>` : ''}
+                        ${isLog ? `<div style="text-align:right; margin-top:-20px;"><button class="delete-btn" onclick="deleteLog(${e.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>` : ''}
+                    </div>
+                </div>`;
+            });
+
+            html += `</div>`; // Close timeline container
+            container.innerHTML = html;
+        }
+
+        // --- Helper: Calculate End Time ---
+        function calcEnd(startId, endId, mins) {
+            const startInput = document.getElementById(startId);
+            const endInput = document.getElementById(endId);
+            
+            if (!startInput.value) {
+                // If start is empty, set it to now (rounded to nearest 15 mins)
+                const now = new Date();
+                const m = Math.floor(now.getMinutes() / 15) * 15;
+                now.setMinutes(m);
+                now.setSeconds(0);
+                startInput.value = now.toTimeString().substring(0, 5);
+            }
+            
+            const [h, m] = startInput.value.split(':').map(Number);
+            const date = new Date();
+            date.setHours(h);
+            date.setMinutes(m + mins);
+            
+            endInput.value = date.toTimeString().substring(0, 5);
+        }
+
+        // --- One-off Modal Logic ---
+        function openOneOffModal() {
+            document.getElementById('modalDateLabel').innerText = selectedDate;
+            document.getElementById('oneOffModal').style.display = 'flex';
+            document.getElementById('moStart').focus();
+        }
+        function closeOneOffModal() {
+            document.getElementById('oneOffModal').style.display = 'none';
+            // Clear inputs
+            ['moStart','moEnd','moBoss','moCourse','moLocation'].forEach(id=>document.getElementById(id).value='');
+        }
+        function saveOneOffEntry() {
+            const s=document.getElementById('moStart').value, e=document.getElementById('moEnd').value, b=document.getElementById('moBoss').value, c=document.getElementById('moCourse').value, l=document.getElementById('moLocation').value;
+            if(!b||!s||!e){alert('資料不完整');return;}
+            schedule.push({id:Date.now(), date:selectedDate, start:s, end:e, boss:b, course:c, location:l});
+            saveSchedule();
+            closeOneOffModal();
+            renderCalendar(); // Refresh dots and list
+        }
+
+        // --- 共用功能 ---
+        function renderTimetableSettings() {
+            const container = document.getElementById('timetableContainer');
+            const filter = document.getElementById('filterBoss').value;
+            container.innerHTML = '';
+            
+            // Only show Recurring items here (no date property)
+            const recurring = schedule.filter(s => !s.date && (filter==='all'||s.boss===filter));
+            
+            const dayMap = {1:'週一', 2:'週二', 3:'週三', 4:'週四', 5:'週五', 6:'週六', 0:'週日'};
+            [1,2,3,4,5,6,0].forEach(d => {
+                const list = recurring.filter(s => s.day==d).sort((a,b)=>a.start.localeCompare(b.start));
+                if(list.length > 0) {
+                    container.innerHTML += `<div style="margin-top:20px;font-weight:700;color:#ccc;font-size:0.9em;margin-bottom:8px;">${dayMap[d]}</div>`;
+                    list.forEach(c => {
+                        const loc = c.location ? `<span style="font-size:0.85em; color:#999;"> @ ${c.location}</span>` : '';
+                        container.innerHTML += `<div class="record-card" style="border-left-color:#ccc; padding:12px;">
+                            <div class="record-info"><div class="record-title" style="font-size:1em;">${c.boss} <span class="record-tag">${c.course||''}</span></div><div class="record-meta">${c.start}-${c.end} ${loc}</div></div>
+                            <div style="display:flex;">
+                                <button class="btn-action" style="padding:4px;" onclick="editSchedule(${c.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+                                <button class="delete-btn" onclick="deleteSchedule(${c.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                            </div>
+                        </div>`;
+                    });
+                }
+            });
+        }
+
+        function checkInFromCal(id, date) {
+            const item = schedule.find(s=>s.id===id); if(!item)return;
+            const h = calculateHours(item.start, item.end);
+            logs.push({id:Date.now(), date, boss:item.boss, course:item.course, location:item.location, start:item.start, end:item.end, note:item.note, hours:h, isSub:false});
+            saveLogs(); renderSelectedDateInfo();
+        }
+        function addLogEntry() {
+            const d=document.getElementById('dateInput').value, b=document.getElementById('bossInput').value, c=document.getElementById('courseInput').value, loc=document.getElementById('locationInput').value, s=document.getElementById('startTime').value, e=document.getElementById('endTime').value;
+            const isSub = document.getElementById('isSubInput').checked;
+            if(!d||!b||!s||!e){alert('資料不完整');return;}
+            logs.push({id:Date.now(), date:d, boss:b, course:c, location:loc, start:s, end:e, note:document.getElementById('noteInput').value, hours:calculateHours(s,e), isSub:isSub});
+            saveLogs(); document.getElementById('isSubInput').checked = false; switchTab('list');
+        }
+        function addTimetableEntry() {
+            const d=document.getElementById('ttDay').value, s=document.getElementById('ttStart').value, e=document.getElementById('ttEnd').value, b=document.getElementById('ttBoss').value, loc=document.getElementById('ttLocation').value;
+            if(!b||!s||!e){alert('資料不完整');return;}
+            
+            if (currentEditingId) {
+                // Update existing
+                const index = schedule.findIndex(x => x.id === currentEditingId);
+                if (index !== -1) {
+                    schedule[index] = { ...schedule[index], day:d, start:s, end:e, boss:b, course:document.getElementById('ttCourse').value, location:loc };
+                }
+                resetScheduleForm();
+            } else {
+                // Add new
+                schedule.push({id:Date.now(), day:d, start:s, end:e, boss:b, course:document.getElementById('ttCourse').value, location:loc});
+            }
+            
+            saveSchedule(); 
+            renderTimetableSettings();
+            setScheduleView('calendar'); // Auto switch back to calendar
+        }
+
+        function editSchedule(id) {
+            const item = schedule.find(s => s.id === id);
+            if(!item) return;
+            currentEditingId = id;
+            
+            document.getElementById('ttDay').value = item.day;
+            document.getElementById('ttStart').value = item.start;
+            document.getElementById('ttEnd').value = item.end;
+            document.getElementById('ttBoss').value = item.boss;
+            document.getElementById('ttCourse').value = item.course;
+            document.getElementById('ttLocation').value = item.location || '';
+            
+            // Scroll to top
+            document.getElementById('view-list').scrollIntoView({ behavior: 'smooth' });
+            
+            // Change button to Update
+            const btn = document.querySelector('#view-list .btn-primary');
+            btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 更新課表`;
+            btn.style.background = '#2196f3'; // Visual cue
+        }
+
+        function resetScheduleForm() {
+            currentEditingId = null;
+            ['ttStart','ttEnd','ttBoss','ttCourse','ttLocation'].forEach(id => document.getElementById(id).value = '');
+            const btn = document.querySelector('#view-list .btn-primary');
+            btn.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> 加入課表`;
+            btn.style.background = ''; // Reset color
+        }
+        
+        function deleteLog(id){if(confirm('刪除？')){logs=logs.filter(x=>x.id!==id);saveLogs();}}
+        function deleteSchedule(id){if(confirm('刪除？')){schedule=schedule.filter(x=>x.id!==id);saveSchedule();}}
+        function saveLogs(){localStorage.setItem('coachLogs',JSON.stringify(logs));updateUI();}
+        function saveSchedule(){localStorage.setItem('coachSchedule',JSON.stringify(schedule));updateUI();}
+        function calculateHours(s,e){let diff=(new Date(`2000/01/01 ${e}`)-new Date(`2000/01/01 ${s}`))/36e5; return (diff<0?diff+24:diff).toFixed(2);}
+        function updateLists(){
+            const bosses=[...new Set(logs.map(x=>x.boss))], courses=[...new Set(logs.map(x=>x.course).filter(x=>x))];
+            const locations=[...new Set(logs.map(x=>x.location).filter(x=>x))];
+            const sel=document.getElementById('filterBoss'), cur=sel.value;
+            sel.innerHTML='<option value="all">全部付款人</option>'; document.getElementById('bossList').innerHTML=''; document.getElementById('courseList').innerHTML=''; document.getElementById('locationList').innerHTML='';
+            bosses.forEach(b=>{sel.innerHTML+=`<option value="${b}">${b}</option>`;document.getElementById('bossList').innerHTML+=`<option value="${b}">`;});
+            courses.forEach(c=>document.getElementById('courseList').innerHTML+=`<option value="${c}">`);
+            locations.forEach(l=>document.getElementById('locationList').innerHTML+=`<option value="${l}">`);
+            if(bosses.includes(cur))sel.value=cur;
+        }
+        function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({logs,schedule})]));a.download=`backup.json`;document.body.appendChild(a);a.click();a.remove();}
+        function importData(i){const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.logs)logs=[...logs,...d.logs];if(d.schedule)schedule=[...schedule,...d.schedule];saveLogs();saveSchedule();alert('OK');}catch{alert('Error');}};r.readAsText(i.files[0]);}
+    </script>
+</body>
+</html>
