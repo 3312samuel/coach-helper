@@ -507,7 +507,10 @@
         let currentTab = 'home';
         let currentCalDate = new Date();
         let reportMonthDate = new Date();
-        let selectedDate = new Date().toISOString().split('T')[0];
+        // Fix: Use local time for selectedDate instead of UTC
+        const today = new Date();
+        const offset = today.getTimezoneOffset() * 60000;
+        let selectedDate = new Date(today.getTime() - offset).toISOString().split('T')[0];
         
         let selectedCourses = new Set();
         let lastFilterKey = '';
@@ -790,7 +793,12 @@
                 // Determine dots to show
                 let dotHtml = '<div class="dots-container">';
                 const isSel = dateStr === selectedDate;
-                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                
+                // Fix: Use local date for "Today" check
+                const now = new Date();
+                const localOffset = now.getTimezoneOffset() * 60000;
+                const isToday = dateStr === new Date(now.getTime() - localOffset).toISOString().split('T')[0];
+                
                 const dotClass = isSel ? 'dot selected-day-dot' : 'dot';
 
                 // Add dots for completed logs (max 3)
@@ -828,7 +836,9 @@
 
         function goToToday() {
             currentCalDate = new Date();
-            selectedDate = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            selectedDate = new Date(now.getTime() - offset).toISOString().split('T')[0];
             renderCalendar();
         }
 
