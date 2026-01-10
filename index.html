@@ -51,8 +51,14 @@
         .form-group { margin-bottom: 18px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85em; color: #666; }
         input, select { 
-            width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; 
+            width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; 
             font-size: 16px; background: #fafafa; transition: all 0.2s;
+        }
+        /* Specific fix for time inputs on mobile */
+        input[type="time"] {
+            min-height: 48px;
+            padding: 10px 8px;
+            font-family: inherit;
         }
         input:focus { border-color: var(--primary); background: white; }
         
@@ -188,11 +194,14 @@
         }
         .filter-chip.active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); font-weight: 600; }
 
+        .time-row { display: flex; gap: 10px; margin-bottom: 5px; }
+        .time-row .form-group { flex: 1; margin-bottom: 0; }
+
         /* Duration Quick Select (Mobile Optimized) */
         .duration-chips { 
-            display: flex; gap: 12px; margin-bottom: 20px; margin-top: -5px; 
-            overflow-x: auto; padding: 4px 2px 10px 2px; /* Extra bottom padding for shadow */
-            -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+            display: flex; gap: 8px; margin-bottom: 20px; margin-top: 8px; 
+            overflow-x: auto; padding: 4px 2px 10px 2px;
+            -webkit-overflow-scrolling: touch;
         }
         .duration-btn {
             font-size: 0.9em; padding: 10px 18px; /* Larger touch target */
@@ -255,9 +264,9 @@
             <div class="form-group"><label>付款人 (Payer)</label><input type="text" id="bossInput" placeholder="輸入名稱..." list="bossList"></div>
             <div class="form-group"><label>課程 (Course)</label><input type="text" id="courseInput" placeholder="課程名稱..." list="courseList"></div>
             <div class="form-group"><label>地點 (Location)</label><input type="text" id="locationInput" placeholder="輸入地點..." list="locationList"></div>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex:1"><label>開始</label><input type="time" id="startTime"></div>
-                <div class="form-group" style="flex:1"><label>結束</label><input type="time" id="endTime"></div>
+            <div class="time-row">
+                <div class="form-group"><label>開始</label><input type="time" id="startTime"></div>
+                <div class="form-group"><label>結束</label><input type="time" id="endTime"></div>
             </div>
             <div class="duration-chips">
                 <div class="duration-btn" onclick="calcEnd('startTime','endTime',60)">+1 hr</div>
@@ -330,9 +339,9 @@
         <div id="view-list" style="display:none;">
             <div class="card">
                 <div class="form-group"><label>星期</label><select id="ttDay"><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option><option value="6">週六</option><option value="0">週日</option></select></div>
-                <div style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex:1"><input type="time" id="ttStart"></div>
-                    <div class="form-group" style="flex:1"><input type="time" id="ttEnd"></div>
+                <div class="time-row">
+                    <div class="form-group"><input type="time" id="ttStart"></div>
+                    <div class="form-group"><input type="time" id="ttEnd"></div>
                 </div>
                 <div class="duration-chips">
                     <div class="duration-btn" onclick="calcEnd('ttStart','ttEnd',60)">+1 hr</div>
@@ -371,9 +380,9 @@
     <div id="oneOffModal" class="modal-overlay" onclick="if(event.target===this)closeOneOffModal()">
         <div class="modal-card">
             <div class="modal-title">新增單次行程 (<span id="modalDateLabel"></span>)</div>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex:1"><input type="time" id="moStart"></div>
-                <div class="form-group" style="flex:1"><input type="time" id="moEnd"></div>
+            <div class="time-row">
+                <div class="form-group"><input type="time" id="moStart"></div>
+                <div class="form-group"><input type="time" id="moEnd"></div>
             </div>
             <div class="duration-chips">
                 <div class="duration-btn" onclick="calcEnd('moStart','moEnd',60)">+1 hr</div>
