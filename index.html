@@ -497,14 +497,25 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
+        // --- 全域變數宣告 (移至頂部) ---
         let logs = []; 
         let schedule = []; 
         let currentUser = null;
         let unsubscribeLogs = null;
         let unsubscribeSchedule = null;
-
-        let reportMonthDate = new Date();
         
+        let currentTab = 'home';
+        let currentCalDate = new Date();
+        let reportMonthDate = new Date();
+        let selectedDate = new Date().toISOString().split('T')[0];
+        
+        let selectedCourses = new Set();
+        let lastFilterKey = '';
+        let currentEditingId = null;
+
+        // --- 初始化 ---
+        document.getElementById('dateInput').valueAsDate = new Date();
+
         // --- Authentication Logic ---
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -543,14 +554,6 @@
             auth.signOut();
         }
 
-        let currentTab = 'home';
-
-        // New State for Filtering
-        let selectedCourses = new Set();
-        let lastFilterKey = '';
-        let currentEditingId = null; // Track editing state
-
-        document.getElementById('dateInput').valueAsDate = new Date();
         // updateUI(); // 刪除這行，因為監聽器會自動觸發第一次渲染
 
         function updateUI() {
