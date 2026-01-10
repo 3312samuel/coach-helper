@@ -818,8 +818,8 @@
                             ${e.course||''} ${loc}
                         </div>
                         ${!isLog ? `<div style="margin-top:8px;">
-                            <button class="btn-action" style="background:var(--primary); color:white; border:none; padding:4px 12px;" onclick="checkInFromCal(${e.id}, '${selectedDate}')">補打卡</button>
-                            ${e.isOneOff ? `<button class="delete-btn" style="float:right; color:#ccc;" onclick="deleteSchedule(${e.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : ''}
+                            <button class="btn-action" style="background:var(--primary); color:white; border:none; padding:4px 12px;" onclick="checkInFromCal('${e.id}', '${selectedDate}')">補打卡</button>
+                            ${e.isOneOff ? `<button class="delete-btn" style="float:right; color:#ccc;" onclick="deleteSchedule('${e.id}')"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : ''}
                         </div>` : ''}
                         ${isLog ? `<div style="text-align:right; margin-top:-20px;"><button class="delete-btn" onclick="deleteLog(${e.id})"><svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>` : ''}
                     </div>
@@ -908,16 +908,22 @@
         }
 
         async function checkInFromCal(id, date) {
-            const item = schedule.find(s=>s.id===id); if(!item)return;
+            // 使用弱型別比較 (==) 以相容字串 ID 與數字 ID
+            const item = schedule.find(s => s.id == id); 
+            if(!item) { alert("找不到行程: " + id); return; }
+            
             const h = calculateHours(item.start, item.end);
             const newId = Date.now().toString();
             const data = {
                 date, boss:item.boss, course:item.course, location:item.location || '', 
-                start:item.start, end:item.end, note:item.note || '', hours:h, isSub:false
+                start:item.start, end:item.end, note:item.note || '', hours:h, isSub:false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             try {
                 await db.collection("logs").doc(newId).set(data);
-            } catch (err) { alert("同步失敗: " + err); }
+                // 成功後給予用戶回饋，例如刷新當前視圖
+                renderSelectedDateInfo();
+            } catch (err) { alert("打卡失敗: " + err); }
         }
         async function addLogEntry() {
             const d=document.getElementById('dateInput').value, b=document.getElementById('bossInput').value, c=document.getElementById('courseInput').value, loc=document.getElementById('locationInput').value, s=document.getElementById('startTime').value, e=document.getElementById('endTime').value;
