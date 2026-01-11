@@ -279,13 +279,15 @@
         }
 
         /* Print Specifics */
+        .month-grid-item { padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+        .month-grid-item.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: bold; }
+
         .print-report { display: none; }
         
         @media print {
             body { background: white; padding: 0; color: black; -webkit-print-color-adjust: exact; }
             .bottom-nav, .input-section, .tools-area, header, .view-toggle, .delete-btn, .month-selector button, .course-filters, #tab-home, #tab-schedule, .card { display: none !important; }
-            .month-selector { border: none; padding: 0; justify-content: flex-start; margin-bottom: 10px; }
-            .month-label { font-size: 1.5em; text-align: left; }
+            .month-selector { display: none !important; } /* Hide selector in print */
             
             #tab-list { display: block !important; }
             #logListContainer { display: none !important; } /* Hide normal list, show print table */
@@ -296,7 +298,7 @@
             .print-meta { font-size: 14px; color: #444; text-align: right; }
             
             /* Print Calendar */
-            .print-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 20px; border: 1px solid #ddd; }
+            .print-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 20px; border: 1px solid #ddd; page-break-inside: avoid; }
             .p-cal-head { font-size: 10px; text-align: center; background: #eee; padding: 4px; font-weight: bold; }
             .p-cal-cell { height: 50px; border: 1px solid #eee; padding: 2px; font-size: 10px; position: relative; }
             .p-cal-cell.has-work { background: #f0f8ff; }
@@ -370,15 +372,17 @@
 
     <div id="tab-list" class="tab-content">
         
-        <div class="month-selector">
-            <button class="month-btn" onclick="changeReportMonth(-1)"><svg class="icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
-            <span id="reportMonthTitle" class="month-label"></span>
-            <button class="month-btn" onclick="changeReportMonth(1)"><svg class="icon" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+        <div class="month-selector" onclick="openMonthPicker()" style="cursor: pointer;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                <span id="reportMonthTitle" class="month-label">選擇月份</span>
+            </div>
+            <div style="color:var(--primary); font-size:0.9em; font-weight:700;">更改 &gt;</div>
         </div>
 
         <div class="card" style="background:var(--dark); color:white;">
             <div style="display:flex; justify-content:space-between; margin-bottom:10px; opacity:0.8; font-size:0.9em;">
-                <span>月度總結</span>
+                <span>總結</span>
                 <svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
             </div>
             <div style="font-size:2em; font-weight:800; margin-bottom:15px;"><span id="totalHours">0.0</span> <span style="font-size:0.5em; font-weight:500;">hr</span></div>
@@ -390,7 +394,7 @@
         <div id="logListContainer"></div>
         
         <div class="tools-area" style="text-align:center; margin-top:30px;">
-            <button class="btn-action" onclick="window.print()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 12v2H8v-2h8zm2-2v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"/></svg> 列印</button>
+            <button class="btn-action" onclick="startPrint()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 12v2H8v-2h8zm2-2v-2H6v2H4v-4c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v4h-2z"/></svg> 列印</button>
             <button class="btn-action" onclick="exportData()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> 備份</button>
             <button class="btn-action" onclick="document.getElementById('importFile').click()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> 還原</button>
         </div>
@@ -477,6 +481,25 @@
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="closeOneOffModal()">取消</button>
                 <button class="btn-primary" onclick="saveOneOffEntry()" style="flex:2">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Month Picker -->
+    <div id="monthPickerModal" class="modal-overlay" onclick="if(event.target===this)closeMonthPicker()">
+        <div class="modal-card">
+            <div class="modal-title">選擇月份</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <button class="month-btn" onclick="changePickerYear(-1)">&lt;</button>
+                <span id="pickerYear" style="font-weight:bold; font-size:1.2em;"></span>
+                <button class="month-btn" onclick="changePickerYear(1)">&gt;</button>
+            </div>
+            <div id="monthGrid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">
+                <!-- generated by js -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeMonthPicker()">取消</button>
+                <button class="btn-primary" onclick="applyMonthSelection()" style="flex:2">確定</button>
             </div>
         </div>
     </div>
@@ -577,43 +600,89 @@
             updateUI();
         }
 
-        // --- 報表月份切換邏輯 ---
-        function changeReportMonth(n) {
-            reportMonthDate.setMonth(reportMonthDate.getMonth() + n);
+        // --- 報表月份/列印邏輯 ---
+        let selectedMonths = []; // ["YYYY-MM", "YYYY-MM"]
+        let pickerYear = new Date().getFullYear();
+        let tempSelectedMonths = new Set();
+
+        // Init default month
+        const _now = new Date();
+        const _defM = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+        selectedMonths = [_defM];
+
+        function startPrint() {
+            renderLogList(); // Refresh data
+            // Delay to allow DOM update which often fixes print issues on mobile
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+
+        function openMonthPicker() {
+            document.getElementById('monthPickerModal').style.display = 'flex';
+            pickerYear = parseInt(selectedMonths[0]?.split('-')[0] || new Date().getFullYear());
+            tempSelectedMonths = new Set(selectedMonths);
+            renderPickerGrid();
+        }
+        function closeMonthPicker() { document.getElementById('monthPickerModal').style.display = 'none'; }
+        function changePickerYear(n) { pickerYear += n; renderPickerGrid(); }
+
+        function renderPickerGrid() {
+            document.getElementById('pickerYear').innerText = pickerYear + "年";
+            const grid = document.getElementById('monthGrid');
+            grid.innerHTML = '';
+            for(let i=1; i<=12; i++) {
+                const mStr = `${pickerYear}-${String(i).padStart(2,'0')}`;
+                const isSel = tempSelectedMonths.has(mStr);
+                grid.innerHTML += `<div class="month-grid-item ${isSel?'selected':''}" onclick="toggleMonthSelection('${mStr}')">${i}月</div>`;
+            }
+        }
+
+        function toggleMonthSelection(mStr) {
+            if(tempSelectedMonths.has(mStr)) tempSelectedMonths.delete(mStr);
+            else tempSelectedMonths.add(mStr);
+            renderPickerGrid();
+        }
+
+        function applyMonthSelection() {
+            if(tempSelectedMonths.size === 0) { alert('請至少選擇一個月份'); return; }
+            selectedMonths = Array.from(tempSelectedMonths).sort();
+            closeMonthPicker();
             renderLogList();
         }
 
-        // --- 報表渲染邏輯 (含月份篩選 & 課程篩選) ---
         function renderLogList() {
             const container = document.getElementById('logListContainer');
             const breakdown = document.getElementById('breakdownContainer');
             const title = document.getElementById('reportMonthTitle');
             const filterBoss = document.getElementById('filterBoss').value;
             
-            // 設定報表標題
-            const year = reportMonthDate.getFullYear();
-            const month = reportMonthDate.getMonth();
-            title.innerText = `${year}年 ${month + 1}月`;
-            const filterPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
+            // Set Title
+            if(selectedMonths.length === 1) {
+                const [y, m] = selectedMonths[0].split('-');
+                title.innerText = `${y}年 ${parseInt(m)}月`;
+            } else {
+                title.innerText = `已選 ${selectedMonths.length} 個月份`;
+            }
 
-            // 1. 獲取本月符合老闆條件的所有記錄 (Raw Data)
-            const rawMonthLogs = logs.filter(e => {
-                const dateMatch = e.date.startsWith(filterPrefix);
+            // 1. Filter Logs
+            const rawLogs = logs.filter(e => {
+                const m = e.date.substring(0, 7);
                 const bossMatch = (filterBoss === 'all' || e.boss === filterBoss);
-                return dateMatch && bossMatch;
+                return selectedMonths.includes(m) && bossMatch;
             }).sort((a,b) => new Date(b.date)-new Date(a.date));
 
-            // 2. 提取可用課程
-            const availableCourses = [...new Set(rawMonthLogs.map(e => e.course || '未分類'))].sort();
-
-            // 3. 檢查上下文是否改變 (月份或老闆變更時重置篩選)
-            const currentKey = `${filterPrefix}_${filterBoss}`;
+            // 2. Extract Courses (Logic same as before)
+            const availableCourses = [...new Set(rawLogs.map(e => e.course || '未分類'))].sort();
+            
+            // Check context change
+            const currentKey = `${selectedMonths.join(',')}_${filterBoss}`;
             if (currentKey !== lastFilterKey) {
                 selectedCourses = new Set(availableCourses);
                 lastFilterKey = currentKey;
             }
 
-            // 4. 渲染篩選器 (Filter Chips)
+            // Render Filters
             const filterContainer = document.getElementById('courseFilters');
             filterContainer.innerHTML = '';
             if (availableCourses.length > 0) {
@@ -624,29 +693,24 @@
                     chip.innerText = c;
                     chip.onclick = () => {
                         if (selectedCourses.has(c)) {
-                            if (selectedCourses.size > 1) selectedCourses.delete(c); // 至少保留一個
-                        } else {
-                            selectedCourses.add(c);
-                        }
-                        renderLogList(); // 重新渲染
+                            if (selectedCourses.size > 1) selectedCourses.delete(c);
+                        } else { selectedCourses.add(c); }
+                        renderLogList();
                     };
                     filterContainer.appendChild(chip);
                 });
-            } else {
-                 filterContainer.innerHTML = '<span style="color:#bbb;font-size:0.8em;">無課程可篩選</span>';
-            }
+            } else { filterContainer.innerHTML = '<span style="color:#bbb;font-size:0.8em;">無課程可篩選</span>'; }
 
-            // 5. 根據篩選器過濾顯示資料
-            const filteredLogs = rawMonthLogs.filter(e => selectedCourses.has(e.course || '未分類'));
+            const filteredLogs = rawLogs.filter(e => selectedCourses.has(e.course || '未分類'));
 
-            // 6. 渲染列表 & 統計
+            // Render List
             container.innerHTML = ''; breakdown.innerHTML = '';
             let total = 0; let bMap = {};
 
             if(filteredLogs.length === 0){ 
                 container.innerHTML='<div style="text-align:center;color:#bbb;padding:40px;">無符合記錄</div>'; 
                 document.getElementById('totalHours').innerText="0.0";
-                renderPrintView([]); // Clear print view
+                renderPrintView([]);
                 return; 
             }
 
@@ -674,7 +738,6 @@
             document.getElementById('totalHours').innerText = total.toFixed(2);
             Object.keys(bMap).forEach(k => breakdown.innerHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>${k}</span><span>${bMap[k].toFixed(2)}</span></div>`);
             
-            // 7. 更新列印視圖
             renderPrintView(filteredLogs);
         }
 
@@ -682,19 +745,25 @@
             const pContainer = document.getElementById('printReport');
             if(!pContainer) return;
             
-            const year = reportMonthDate.getFullYear();
-            const month = reportMonthDate.getMonth();
             const bossName = document.getElementById('filterBoss').value;
             const displayBoss = bossName === 'all' ? '全部付款人' : bossName;
-            
-            // Get unique courses from the logs being printed
             const courseList = [...new Set(logs.map(l => l.course || '未分類'))].join(', ');
-            
             const totalH = logs.reduce((acc, cur) => acc + parseFloat(cur.hours), 0).toFixed(2);
+            
+            // Title Logic
+            let titleStr = "";
+            if(selectedMonths.length === 1) {
+                const [y, m] = selectedMonths[0].split('-');
+                titleStr = `${y}年${parseInt(m)}月 工作報表`;
+            } else if (selectedMonths.length > 0) {
+                const sorted = [...selectedMonths].sort();
+                const start = sorted[0], end = sorted[sorted.length-1];
+                titleStr = `${start} 至 ${end} 工作報表 (${selectedMonths.length}個月)`;
+            }
 
             let html = `
                 <div class="print-header">
-                    <div class="print-title">${year}年${month+1}月 工作報表</div>
+                    <div class="print-title">${titleStr}</div>
                     <div class="print-meta">
                         <div style="font-weight:700;">付款人: ${displayBoss}</div>
                         <div style="font-size:0.9em; margin:2px 0;">課程: ${courseList}</div>
@@ -703,27 +772,41 @@
                 </div>
             `;
 
-            // Print Calendar
-            html += `<div class="print-cal">`;
-            ['日','一','二','三','四','五','六'].forEach(d => html += `<div class="p-cal-head">${d}</div>`);
+            // Print Calendar (Multi-month support)
+            // Sort months to print calendars in order
+            const months = [...new Set(logs.map(l => l.date.substring(0,7)))].sort();
             
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for(let i=0; i<firstDay; i++) html += `<div></div>`;
+            html += `<div style="display:flex; flex-wrap:wrap; gap:10px;">`;
             
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const dayLogs = logs.filter(l => l.date === dateStr);
-                const dayHours = dayLogs.reduce((a,b)=>a+parseFloat(b.hours), 0);
+            // If no logs, fallback to selected months (but empty)
+            const loopMonths = months.length > 0 ? months : selectedMonths.sort();
+
+            loopMonths.forEach(mStr => {
+                const [y, m] = mStr.split('-').map(Number);
+                html += `<div style="width:100%; break-inside:avoid; margin-bottom:10px;">`;
+                html += `<div style="font-weight:bold; margin-bottom:5px;">${y}年${m}月</div>`;
+                html += `<div class="print-cal">`;
+                ['日','一','二','三','四','五','六'].forEach(d => html += `<div class="p-cal-head">${d}</div>`);
                 
-                let content = `<span>${d}</span>`;
-                let cls = 'p-cal-cell';
-                if(dayHours > 0) {
-                    cls += ' has-work';
-                    content += `<span class="p-work-dot">${dayHours.toFixed(1)}h</span>`;
+                const firstDay = new Date(y, m-1, 1).getDay();
+                const daysInMonth = new Date(y, m, 0).getDate();
+                for(let i=0; i<firstDay; i++) html += `<div></div>`;
+                
+                for(let d=1; d<=daysInMonth; d++) {
+                    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const dayLogs = logs.filter(l => l.date === dateStr);
+                    const dayHours = dayLogs.reduce((a,b)=>a+parseFloat(b.hours), 0);
+                    
+                    let content = `<span>${d}</span>`;
+                    let cls = 'p-cal-cell';
+                    if(dayHours > 0) {
+                        cls += ' has-work';
+                        content += `<span class="p-work-dot">${dayHours.toFixed(1)}h</span>`;
+                    }
+                    html += `<div class="${cls}">${content}</div>`;
                 }
-                html += `<div class="${cls}">${content}</div>`;
-            }
+                html += `</div></div>`;
+            });
             html += `</div>`;
 
             // Print Table
@@ -732,7 +815,6 @@
                     <thead><tr><th>日期</th><th>時間</th><th>地點</th><th>內容</th><th style="text-align:right">時數</th></tr></thead>
                     <tbody>
             `;
-            // Sort by Date ASC for report
             const sortedForPrint = [...logs].sort((a,b)=>new Date(a.date)-new Date(b.date) || a.start.localeCompare(b.start));
             
             sortedForPrint.forEach(l => {
